@@ -20937,6 +20937,7 @@ peekStrZ(CPUArchState *env, target_ulong ptr, int maxlen)
     return buf;
 }
 
+/*
 void helper_aflInterceptLog(CPUArchState *env)
 {
     if(!aflStart)
@@ -20977,3 +20978,4 @@ static void gen_aflBBlock(target_ulong pc)
     if(pc == aflDmesgAddr)
         gen_helper_aflInterceptLog(cpu_env);
 }
+*/

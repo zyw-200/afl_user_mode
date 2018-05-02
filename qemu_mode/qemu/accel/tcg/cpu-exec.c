@@ -181,11 +181,13 @@ if(next_output)
 		VMI_find_process_by_cr3_c(pgd, cur_process, 512, &pid);
 		//if(strcmp(cur_process, "hedwig.cgi") == 0){// NEED CHANGE
 			//DECAF_printf("print_pc is %x\n", pc);
-			AFL_QEMU_CPU_SNIPPET2(env, pc);
+			//AFL_QEMU_CPU_SNIPPET2(env, pc);
+			AFL_QEMU_CPU_SNIPPET2;
 		//}
 	}
 #else
-	AFL_QEMU_CPU_SNIPPET2(env, pc);
+	//AFL_QEMU_CPU_SNIPPET2(env, pc);
+	AFL_QEMU_CPU_SNIPPET2;
 #endif
 }
 else
