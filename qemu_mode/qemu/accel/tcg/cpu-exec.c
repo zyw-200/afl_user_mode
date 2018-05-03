@@ -169,26 +169,10 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
 
     cpu->can_do_io = !use_icount;
     target_ulong pc = env->active_tc.PC; //zyw mips
-    //if(aflStart == 2) 	DECAF_printf("before tcg_qemu_tb_exec pc:%x\n", itb->pc);
     
 if(next_output)
 {
-#ifdef CONFIG_SOFTMMU	
-	if(aflStart){
-		target_ulong pgd = DECAF_getPGD(cpu);
-		char cur_process[512];
-		  int pid;
-		VMI_find_process_by_cr3_c(pgd, cur_process, 512, &pid);
-		//if(strcmp(cur_process, "hedwig.cgi") == 0){// NEED CHANGE
-			//DECAF_printf("print_pc is %x\n", pc);
-			//AFL_QEMU_CPU_SNIPPET2(env, pc);
-			AFL_QEMU_CPU_SNIPPET2;
-		//}
-	}
-#else
-	//AFL_QEMU_CPU_SNIPPET2(env, pc);
 	AFL_QEMU_CPU_SNIPPET2;
-#endif
 }
 else
 {
@@ -230,38 +214,9 @@ else
 	{
 		next_output = 0;
 	}
-/*
-	if(next_output)
-	{	
-		if(aflStart){
-			target_ulong pgd = DECAF_getPGD(cpu);
-			char cur_process[512];
-			int pid;
-			VMI_find_process_by_cr3_c(pgd, cur_process, 512, &pid);
-			//if(strcmp(cur_process, "hedwig.cgi") == 0){// NEED CHANGE
-			DECAF_printf("print_pc is %x\n", pc);
-				AFL_QEMU_CPU_SNIPPET2(env, pc);
-			//}
-		}
-	}
-	else
-	{
-		next_output = 1;
-	}
-	if(ret == 0) //zyw solve multiple path problem
-	{
-		next_output = 0;
-	}
-*/
+
     }
-/*
-    if(afl_wants_cpu_to_stop){
-	DECAF_printf("cpu-exec, exit_request\n");
-	cpu->exit_request = 1;
-	
-    }
-*/
-//zyw
+
     return ret;
 }
 
@@ -440,7 +395,7 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
             if (!tb) {
                 /* if no translated code available, then translate it now */
                 tb = tb_gen_code(cpu, pc, cs_base, flags, 0);
-		//AFL_QEMU_CPU_SNIPPET1; //zyw
+		AFL_QEMU_CPU_SNIPPET1; //zyw
             }
 
             mmap_unlock();
@@ -450,7 +405,7 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
         atomic_set(&cpu->tb_jmp_cache[tb_jmp_cache_hash_func(pc)], tb);
     }
 
-#ifdef NOPE_NOT_NEVER 
+
 
 #ifndef CONFIG_USER_ONLY
     /* We don't take care of direct jumps when address mapping changes in
@@ -474,7 +429,7 @@ static inline TranslationBlock *tb_find(CPUState *cpu,
             tb_add_jump(last_tb, tb_exit, tb);
         }
     }
-#endif
+
 //zyw
     if (have_tb_lock) {
         tb_unlock();
@@ -592,7 +547,6 @@ static inline bool cpu_handle_interrupt(CPUState *cpu,
             /* Mask out external interrupts for this step. */
             interrupt_request &= ~CPU_INTERRUPT_SSTEP_MASK;
         }
-	//if (flagg == 2) DECAF_printf("interrupt:%x\n", interrupt_request);
         if (interrupt_request & CPU_INTERRUPT_DEBUG) {
             cpu->interrupt_request &= ~CPU_INTERRUPT_DEBUG;
             cpu->exception_index = EXCP_DEBUG;
