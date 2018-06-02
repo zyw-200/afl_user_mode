@@ -33,7 +33,7 @@ static int count(char ** vec)
 
 static int prepare_binprm(struct linux_binprm *bprm)
 {
-    struct stat		st;
+    struct stat st;
     int mode;
     int retval;
 
@@ -138,7 +138,6 @@ int loader_exec(int fdexec, const char *filename, char **argv, char **envp,
     bprm->envp = envp;
 
     retval = prepare_binprm(bprm);
-
     if(retval>=0) {
         if (bprm->buf[0] == 0x7f
                 && bprm->buf[1] == 'E'

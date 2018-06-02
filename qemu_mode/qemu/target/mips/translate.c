@@ -20382,8 +20382,8 @@ void gen_intermediate_code(CPUState *cs, struct TranslationBlock *tb)
 
         is_slot = ctx.hflags & MIPS_HFLAG_BMASK;
         if (!(ctx.hflags & MIPS_HFLAG_M16)) {
-            ctx.opcode = cpu_ldl_code(env, ctx.pc);
-            insn_bytes = 4;
+            ctx.opcode = cpu_ldl_code(env, ctx.pc);   
+            insn_bytes = 4; 
             decode_opc(env, &ctx);
         } else if (ctx.insn_flags & ASE_MICROMIPS) {
             ctx.opcode = cpu_lduw_code(env, ctx.pc);

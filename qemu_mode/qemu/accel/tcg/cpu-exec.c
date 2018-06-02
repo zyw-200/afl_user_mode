@@ -143,6 +143,7 @@ static void init_delay_params(SyncClocks *sc, const CPUState *cpu)
 static int next_output = 1;
 static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
 {
+    if(itb->pc<0x80000000) printf("cpu_tb_exec:%x\n", itb->pc);
     CPUArchState *env = cpu->env_ptr;
     uintptr_t ret;
     TranslationBlock *last_tb;
@@ -178,7 +179,6 @@ else
 {
 	next_output = 1;
 }
-
 
     ret = tcg_qemu_tb_exec(env, tb_ptr);
     //if(aflStart == 2) DECAF_printf("after tcg_qemu_tb_exec:%x,ret: %x\n", itb->pc, ret);
@@ -676,7 +676,6 @@ int cpu_exec(CPUState *cpu)
     CPUClass *cc = CPU_GET_CLASS(cpu);
     int ret;
     SyncClocks sc = { 0 };
-
     /* replay_interrupt may need current_cpu */
     current_cpu = cpu;
 
@@ -684,7 +683,6 @@ int cpu_exec(CPUState *cpu)
         return EXCP_HALTED;
     }
     rcu_read_lock();
-
     cc->cpu_exec_enter(cpu);
     /* Calculate difference between guest clock and host clock.
      * This delay includes the delay of the last cycle, so

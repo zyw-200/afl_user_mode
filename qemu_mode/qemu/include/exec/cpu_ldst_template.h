@@ -86,7 +86,6 @@ glue(glue(glue(cpu_ld, USUFFIX), MEMSUFFIX), _ra)(CPUArchState *env,
     target_ulong addr;
     int mmu_idx;
     TCGMemOpIdx oi;
-
 #if !defined(SOFTMMU_CODE_ACCESS)
     trace_guest_mem_before_exec(
         ENV_GET_CPU(env), ptr,

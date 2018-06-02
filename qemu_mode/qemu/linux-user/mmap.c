@@ -361,6 +361,10 @@ abi_ulong mmap_find_vma(abi_ulong start, abi_ulong size)
 abi_long target_mmap(abi_ulong start, abi_ulong len, int prot,
                      int flags, int fd, abi_ulong offset)
 {
+
+//zyw
+    flags = flags | MAP_FIXED;
+
     abi_ulong ret, end, real_start, real_end, retaddr, host_offset, host_len;
 
     mmap_lock();
@@ -407,7 +411,7 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int prot,
     if (!(flags & MAP_FIXED)) {
         host_len = len + offset - host_offset;
         host_len = HOST_PAGE_ALIGN(host_len);
-        start = mmap_find_vma(real_start, host_len);
+        start = mmap_find_vma(real_start, host_len); //zyw change the start address
         if (start == (abi_ulong)-1) {
             errno = ENOMEM;
             goto fail;
@@ -546,6 +550,7 @@ abi_long target_mmap(abi_ulong start, abi_ulong len, int prot,
                 offset1 = 0;
             else
                 offset1 = offset + real_start - start;
+	    printf("g2h start is %x, %x, %x, %x, %x\n",real_start, g2h(real_start), real_end - real_start, offset1, guest_base);
             p = mmap(g2h(real_start), real_end - real_start,
                      prot, flags, fd, offset1);
             if (p == MAP_FAILED)

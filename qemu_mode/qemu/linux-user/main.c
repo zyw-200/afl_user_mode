@@ -2236,9 +2236,9 @@ void cpu_loop(CPUMIPSState *env)
         trapnr = cpu_exec(cs);
         cpu_exec_end(cs);
         process_queued_cpu_work(cs);
-
         switch(trapnr) {
         case EXCP_SYSCALL:
+	   
             env->active_tc.PC += 4;
 # ifdef TARGET_ABI_MIPSO32
             syscall_num = env->active_tc.gpr[2] - 4000;
@@ -2251,6 +2251,10 @@ void cpu_loop(CPUMIPSState *env)
 
                 nb_args = mips_syscall_args[syscall_num];
                 sp_reg = env->active_tc.gpr[29];
+//zyw
+		//printf("syscall:%x,pc:%x,", trapnr, env->active_tc.PC);
+	        //printf("syscall num:%d,arg num is:%d\n", syscall_num, nb_args);
+
                 switch (nb_args) {
                 /* these arguments are taken from the stack */
                 case 8:
@@ -4214,8 +4218,81 @@ static int parse_args(int argc, char **argv)
     return optind;
 }
 
+#define MAP_SIZE 1000
+int gva[MAP_SIZE];
+int hva[MAP_SIZE];
+int hva_start;
+
+int search_map_table(int vaddr_h)
+{
+	for(int i=0; i<MAP_SIZE; i++)
+	{
+		if(gva[i] == vaddr_h)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+    
+int if_addr_mapping(int vaddr)
+{
+	int vaddr_h = vaddr & 0xfffff000;
+	int index = search_map_table(vaddr_h);
+	if(hva[index]!=-1)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int parse_map_table(char *filename)
+{
+	
+	char strline[100];
+	FILE *fp = fopen(filename, "r");
+	if(fp == NULL){
+		printf("file open error\n");
+		exit(32);
+	}
+	int index = 0;
+	fgets(strline, 100, fp);
+	hva_start = strtol(strline,NULL, 16);
+	while(fgets(strline, 100, fp)!=NULL){
+		char *p1 = strtok(strline, ":");
+		char *p2 = strtok(NULL, ":");
+		int vaddr = strtol(p1,NULL, 16);
+		int haddr = strtol(p2,NULL, 16);
+		int res = search_map_table(vaddr);
+		if(res == -1)
+		{
+			gva[index] = vaddr;
+			hva[index] = haddr;
+			index++;
+		}
+		else{
+			gva[res] = vaddr;
+			hva[res] = haddr;
+		}
+	}
+}
+		
+	
 int main(int argc, char **argv, char **envp)
 {
+    hva_start = 0;
+    for(int i=0; i<MAP_SIZE; i++)
+    {
+	gva[i] = 0;
+	hva[i] = 0;
+    }
+    parse_map_table("mapping_table");
+    printf("hva_start:%x\n", hva_start);
+    int fd = open("mem_file", O_RDWR, 0);
+    assert(fd!=-1);
+
+   
+
     struct target_pt_regs regs1, *regs = &regs1;
     struct image_info info1, *info = &info1;
     struct linux_binprm bprm;
@@ -4422,9 +4499,36 @@ int main(int argc, char **argv, char **envp)
             _exit(EXIT_FAILURE);
         }
     }
-
     ret = loader_exec(execfd, filename, target_argv, target_environ, regs,
         info, &bprm);
+
+//zyw
+
+    char* mmappedData;
+    //int m_res = target_munmap(0x401000, 0x139a0);
+    //printf("unmmap result:%d\n", m_res);
+    for(int i=0; i<MAP_SIZE; i++)
+    {	
+	if(gva[i] != 0)
+	{
+		if(hva[i] < hva_start){
+			printf("zyw mapping memory overflow\n");
+			exit(32);
+		}
+		//printf("munmap:%x\n",gva[i]);
+		int un_result = target_munmap(gva[i], 1024*4);
+		//if(un_result) exit(32);
+		printf("mmap:%x,%x\n",gva[i], hva[i] - hva_start);
+		mmappedData = target_mmap(gva[i], 1024*4, PROT_READ|PROT_WRITE, MAP_SHARED, fd, hva[i] - hva_start);
+		assert(mmappedData != MAP_FAILED);
+	}
+    }
+
+    printf("mapping done:%x\n", mmappedData);	
+    write(1, mmappedData, 1024*4);
+ 
+//
+
     if (ret != 0) {
         printf("Error while loading %s: %s\n", filename, strerror(-ret));
         _exit(EXIT_FAILURE);
@@ -4714,6 +4818,8 @@ int main(int argc, char **argv, char **envp)
             env->active_tc.gpr[i] = regs->regs[i];
         }
         env->active_tc.PC = regs->cp0_epc & ~(target_ulong)1;
+//zyw
+	//printf("start pc:%x\n", regs->cp0_epc);
         if (regs->cp0_epc & 1) {
             env->hflags |= MIPS_HFLAG_M16;
         }
@@ -4859,6 +4965,8 @@ int main(int argc, char **argv, char **envp)
         }
         gdb_handlesig(cpu, 0);
     }
+    env->active_tc.PC = 0x7752aa00;
+    printf("start pc is:%x\n",env->active_tc.PC);
     cpu_loop(env);
     /* never exits */
     return 0;
