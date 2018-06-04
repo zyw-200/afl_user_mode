@@ -143,7 +143,6 @@ static void init_delay_params(SyncClocks *sc, const CPUState *cpu)
 static int next_output = 1;
 static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
 {
-    if(itb->pc<0x80000000) printf("cpu_tb_exec:%x\n", itb->pc);
     CPUArchState *env = cpu->env_ptr;
     uintptr_t ret;
     TranslationBlock *last_tb;
@@ -179,7 +178,10 @@ else
 {
 	next_output = 1;
 }
-
+//zyw
+    int static_pc = itb->pc -  0x77019000;
+    if(itb->pc<0x80000000) printf("cpu_tb_exec:%x,%x\n", static_pc, tb_ptr);
+    if(static_pc == 0x3f20) printf("a0 is %x, a1 is %x, v0 is %x\n", env->active_tc.gpr[4], env->active_tc.gpr[5], env->active_tc.gpr[2]);
     ret = tcg_qemu_tb_exec(env, tb_ptr);
     //if(aflStart == 2) DECAF_printf("after tcg_qemu_tb_exec:%x,ret: %x\n", itb->pc, ret);
     cpu->can_do_io = 1;

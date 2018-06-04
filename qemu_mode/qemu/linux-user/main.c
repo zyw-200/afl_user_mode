@@ -2252,9 +2252,8 @@ void cpu_loop(CPUMIPSState *env)
                 nb_args = mips_syscall_args[syscall_num];
                 sp_reg = env->active_tc.gpr[29];
 //zyw
-		//printf("syscall:%x,pc:%x,", trapnr, env->active_tc.PC);
-	        //printf("syscall num:%d,arg num is:%d\n", syscall_num, nb_args);
-
+		printf("syscall:%x,pc:%x,", trapnr, env->active_tc.PC - 0x77975000); //NEED CHANGE
+	        printf("syscall num:%d,arg num is:%d\n", syscall_num, nb_args);
                 switch (nb_args) {
                 /* these arguments are taken from the stack */
                 case 8:
@@ -4221,6 +4220,7 @@ static int parse_args(int argc, char **argv)
 #define MAP_SIZE 1000
 int gva[MAP_SIZE];
 int hva[MAP_SIZE];
+int init_regs[33];
 int hva_start;
 
 int search_map_table(int vaddr_h)
@@ -4258,6 +4258,11 @@ int parse_map_table(char *filename)
 	int index = 0;
 	fgets(strline, 100, fp);
 	hva_start = strtol(strline,NULL, 16);
+	for(int i = 0; i < 33; i++)
+	{
+		fgets(strline, 100, fp);
+		init_regs[i] = strtol(strline,NULL, 16);
+	}	
 	while(fgets(strline, 100, fp)!=NULL){
 		char *p1 = strtok(strline, ":");
 		char *p2 = strtok(NULL, ":");
@@ -4280,6 +4285,8 @@ int parse_map_table(char *filename)
 	
 int main(int argc, char **argv, char **envp)
 {
+
+//zyw
     hva_start = 0;
     for(int i=0; i<MAP_SIZE; i++)
     {
@@ -4291,7 +4298,7 @@ int main(int argc, char **argv, char **envp)
     int fd = open("mem_file", O_RDWR, 0);
     assert(fd!=-1);
 
-   
+//  
 
     struct target_pt_regs regs1, *regs = &regs1;
     struct image_info info1, *info = &info1;
@@ -4515,9 +4522,7 @@ int main(int argc, char **argv, char **envp)
 			printf("zyw mapping memory overflow\n");
 			exit(32);
 		}
-		//printf("munmap:%x\n",gva[i]);
 		int un_result = target_munmap(gva[i], 1024*4);
-		//if(un_result) exit(32);
 		printf("mmap:%x,%x\n",gva[i], hva[i] - hva_start);
 		mmappedData = target_mmap(gva[i], 1024*4, PROT_READ|PROT_WRITE, MAP_SHARED, fd, hva[i] - hva_start);
 		assert(mmappedData != MAP_FAILED);
@@ -4526,7 +4531,7 @@ int main(int argc, char **argv, char **envp)
 
     printf("mapping done:%x\n", mmappedData);	
     write(1, mmappedData, 1024*4);
- 
+
 //
 
     if (ret != 0) {
@@ -4965,8 +4970,20 @@ int main(int argc, char **argv, char **envp)
         }
         gdb_handlesig(cpu, 0);
     }
-    env->active_tc.PC = 0x7752aa00;
-    printf("start pc is:%x\n",env->active_tc.PC);
+//zyw
+/*
+    env->active_tc.PC = 0x77975a00;
+    env->active_tc.gpr[28] = 0; //gp
+    env->active_tc.gpr[29] = 0x7f8149d0; //sp
+    env->active_tc.gpr[30] = 0x2f; //fp
+    env->active_tc.gpr[30] = 0; //ra
+*/
+    for(int i=0; i<32; i++)
+    {
+	env->active_tc.gpr[i] = init_regs[i];
+    }
+    env->active_tc.PC = init_regs[32];
+    printf("start pc is:%x,sp is:%x, a0 is:%x\n",env->active_tc.PC, env->active_tc.gpr[29], env->active_tc.gpr[4]);
     cpu_loop(env);
     /* never exits */
     return 0;
